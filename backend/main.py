@@ -7,27 +7,66 @@ from aiogram import Bot, Dispatcher, types
 from aiogram.filters import CommandStart
 from aiogram.types import WebAppInfo, InlineKeyboardMarkup, InlineKeyboardButton
 
-from backend.config import BOT_TOKEN, WEBHOOK_URL, MEDIA_DIR
+from backend.config import BOT_TOKEN, WEBHOOK_URL, MEDIA_DIR, ACCESS_PASSWORD
+from backend.services.database import query_one
 from backend.routers import media, comments, albums, users
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# Хранилище telegram_id пользователей, ожидающих ввод пароля
+_pending_password = set()
+
+
+def is_user_linked(telegram_id: int) -> bool:
+    user = query_one("SELECT id FROM users WHERE telegram_id = %s", (telegram_id,))
+    return user is not None
+
+
+def get_gallery_keyboard():
+    return InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="📸 Открыть галерею",
+            web_app=WebAppInfo(url=WEBHOOK_URL),
+        )]
+    ])
+
 
 @dp.message(CommandStart())
 async def cmd_start(message: types.Message):
-    webapp_url = WEBHOOK_URL
-    kb = InlineKeyboardMarkup(inline_keyboard=[
-        [InlineKeyboardButton(
-            text="📸 Открыть галерею",
-            web_app=WebAppInfo(url=webapp_url),
-        )]
-    ])
-    await message.answer(
-        "Привет! 👋\n\nАрхів компромата 🤫\n"
-        "Нажми кнопку ниже, чтобы открыть галерею:",
-        reply_markup=kb,
-    )
+    tg_id = message.from_user.id
+
+    if is_user_linked(tg_id):
+        await message.answer(
+            "Привет! 👋\n\nАрхів компромата 🤫\n"
+            "Нажми кнопку ниже, чтобы открыть галерею:",
+            reply_markup=get_gallery_keyboard(),
+        )
+    else:
+        _pending_password.add(tg_id)
+        await message.answer(
+            "Привет! 👋\n\n"
+            "Для доступа к архіву компромата введи пароль:"
+        )
+
+
+@dp.message()
+async def handle_message(message: types.Message):
+    tg_id = message.from_user.id
+
+    if tg_id not in _pending_password:
+        return
+
+    if message.text and message.text.strip() == ACCESS_PASSWORD:
+        _pending_password.discard(tg_id)
+        await message.answer(
+            "Пароль верный! ✅\n\n"
+            "Архів компромата 🤫\n"
+            "Нажми кнопку ниже, чтобы открыть галерею:",
+            reply_markup=get_gallery_keyboard(),
+        )
+    else:
+        await message.answer("Неверный пароль ❌\nПопробуй ещё раз:")
 
 
 @asynccontextmanager
