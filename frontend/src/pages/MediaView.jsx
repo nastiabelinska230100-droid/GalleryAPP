@@ -1,4 +1,4 @@
-import { useEffect, useCallback } from 'react'
+import { useCallback } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import Lightbox from '../components/Lightbox'
 
@@ -13,20 +13,6 @@ export default function MediaView() {
       navigate('/')
     }
   }, [navigate])
-
-  useEffect(() => {
-    const tg = window.Telegram?.WebApp
-    if (tg) {
-      tg.BackButton.show()
-      tg.BackButton.onClick(goBack)
-    }
-    return () => {
-      if (tg) {
-        tg.BackButton.hide()
-        tg.BackButton.offClick(goBack)
-      }
-    }
-  }, [goBack])
 
   return (
     <Lightbox

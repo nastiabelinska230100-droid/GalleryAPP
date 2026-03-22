@@ -34,10 +34,10 @@ export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
     const tg = window.Telegram?.WebApp
     if (tg?.BackButton) {
       tg.BackButton.show()
-      tg.BackButton.onClick(onClose)
+      const handler = () => onClose()
+      tg.BackButton.onClick(handler)
       return () => {
-        tg.BackButton.hide()
-        tg.BackButton.offClick(onClose)
+        tg.BackButton.offClick(handler)
       }
     }
   }, [onClose])
@@ -122,11 +122,7 @@ export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
       )}
 
       {/* Header */}
-      <div className="flex items-center justify-between p-3 flex-shrink-0">
-        <button onClick={onClose} className="text-sm font-medium"
-          style={{ color: 'var(--tg-theme-button-color)' }}>
-          Назад
-        </button>
+      <div className="flex items-center justify-end p-3 flex-shrink-0">
         <div className="flex gap-3">
           <button onClick={handleDownload} className="text-sm"
             style={{ color: 'var(--tg-theme-button-color)' }}>

@@ -1,4 +1,4 @@
-import { useState, useCallback, useRef } from 'react'
+import { useState, useEffect, useCallback, useRef } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useMediaList } from '../hooks/useMedia'
 import MediaGrid from '../components/MediaGrid'
@@ -33,10 +33,22 @@ export default function Feed() {
     [isFetchingNextPage, hasNextPage, fetchNextPage]
   )
 
+  useEffect(() => {
+    const tg = window.Telegram?.WebApp
+    const goBack = () => navigate('/')
+    if (tg?.BackButton) {
+      tg.BackButton.show()
+      tg.BackButton.onClick(goBack)
+      return () => {
+        tg.BackButton.hide()
+        tg.BackButton.offClick(goBack)
+      }
+    }
+  }, [navigate])
+
   return (
     <div className="pb-16">
-      <div className="p-3 flex items-center gap-2">
-        <button onClick={() => navigate('/')} className="text-lg">←</button>
+      <div className="p-3">
         <h2 className="text-lg font-bold" style={{ color: 'var(--tg-theme-text-color)' }}>
           Все фото и видео
         </h2>
