@@ -6,6 +6,7 @@ from backend.services.storage import save_file, delete_file
 from backend.services.image import convert_heic_to_jpg, generate_thumbnail, generate_video_thumbnail
 from backend.services.notifications import notify_new_upload
 from backend.routers.users import get_current_user
+from backend.routers.comments import get_reactions_for_comments, format_comment
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
@@ -188,8 +189,12 @@ async def get_media(
 
     likes_data = query("SELECT l.*, u.display_name FROM likes l JOIN users u ON u.id = l.user_id WHERE l.media_id = %s", (media_id,))
     comments_data = query(
-        """SELECT c.*, u.name as user_name, u.display_name as user_display_name, u.avatar_url as user_avatar_url
-           FROM comments c JOIN users u ON u.id = c.user_id
+        """SELECT c.*, u.name as user_name, u.display_name as user_display_name, u.avatar_url as user_avatar_url,
+                  r.display_name as reply_to_user, rc.text as reply_to_text
+           FROM comments c
+           JOIN users u ON u.id = c.user_id
+           LEFT JOIN comments rc ON rc.id = c.reply_to_id
+           LEFT JOIN users r ON r.id = rc.user_id
            WHERE c.media_id = %s ORDER BY c.created_at""",
         (media_id,),
     )
@@ -202,18 +207,9 @@ async def get_media(
     if current_user:
         liked_by_me = any(l["user_id"] == current_user["id"] for l in likes_data)
 
-    comments_out = []
-    for c in comments_data:
-        comments_out.append({
-            "id": c["id"],
-            "media_id": str(c["media_id"]),
-            "user_id": c["user_id"],
-            "user_name": c["user_name"],
-            "user_display_name": c["user_display_name"],
-            "user_avatar_url": c.get("user_avatar_url"),
-            "text": c["text"],
-            "created_at": c["created_at"].isoformat() if c["created_at"] else None,
-        })
+    comment_ids = [c["id"] for c in comments_data]
+    reactions_map = get_reactions_for_comments(comment_ids)
+    comments_out = [format_comment(c, reactions_map) for c in comments_data]
 
     return {
         "id": str(m["id"]),

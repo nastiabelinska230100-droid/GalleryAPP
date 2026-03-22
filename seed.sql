@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS comments (
   media_id UUID REFERENCES media(id) ON DELETE CASCADE,
   user_id INTEGER REFERENCES users(id),
   text TEXT NOT NULL,
+  reply_to_id INTEGER REFERENCES comments(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -51,6 +52,14 @@ CREATE TABLE IF NOT EXISTS album_media (
   album_id INTEGER REFERENCES albums(id) ON DELETE CASCADE,
   media_id UUID REFERENCES media(id) ON DELETE CASCADE,
   PRIMARY KEY (album_id, media_id)
+);
+
+CREATE TABLE IF NOT EXISTS comment_reactions (
+  id SERIAL PRIMARY KEY,
+  comment_id INTEGER REFERENCES comments(id) ON DELETE CASCADE,
+  user_id INTEGER REFERENCES users(id),
+  emoji TEXT NOT NULL,
+  UNIQUE (comment_id, user_id, emoji)
 );
 
 INSERT INTO users (name, display_name) VALUES

@@ -1,14 +1,18 @@
 import { useState, useRef, useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
-import { addComment, deleteComment } from '../api'
+import { addComment, deleteComment, toggleReaction } from '../api'
 import { useCurrentUser } from '../hooks/useUser'
+
+const REACTION_EMOJIS = ['😂', '❤️', '🔥', '😮', '😢', '👍']
 
 export default function CommentSection({ mediaId, comments = [] }) {
   const [text, setText] = useState('')
+  const [replyTo, setReplyTo] = useState(null)
+  const [showEmojiPicker, setShowEmojiPicker] = useState(null)
   const { data: currentUser } = useCurrentUser()
   const queryClient = useQueryClient()
   const bottomRef = useRef(null)
-  const formRef = useRef(null)
+  const inputRef = useRef(null)
 
   const scrollToBottom = useCallback(() => {
     setTimeout(() => {
@@ -18,26 +22,42 @@ export default function CommentSection({ mediaId, comments = [] }) {
     }, 400)
   }, [])
 
+  const invalidate = () => {
+    queryClient.invalidateQueries({ queryKey: ['media', mediaId] })
+    queryClient.invalidateQueries({ queryKey: ['media'] })
+  }
+
   const addMutation = useMutation({
-    mutationFn: (commentText) => addComment(mediaId, commentText),
+    mutationFn: ({ commentText, replyToId }) => addComment(mediaId, commentText, replyToId),
     onSuccess: () => {
       setText('')
-      queryClient.invalidateQueries({ queryKey: ['media', mediaId] })
-      queryClient.invalidateQueries({ queryKey: ['media'] })
+      setReplyTo(null)
+      invalidate()
     },
   })
 
   const deleteMutation = useMutation({
     mutationFn: deleteComment,
+    onSuccess: invalidate,
+  })
+
+  const reactMutation = useMutation({
+    mutationFn: ({ commentId, emoji }) => toggleReaction(commentId, emoji),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['media', mediaId] })
+      setShowEmojiPicker(null)
+      invalidate()
     },
   })
 
   const handleSubmit = (e) => {
     e.preventDefault()
     if (!text.trim()) return
-    addMutation.mutate(text.trim())
+    addMutation.mutate({ commentText: text.trim(), replyToId: replyTo?.id || null })
+  }
+
+  const handleReply = (comment) => {
+    setReplyTo(comment)
+    inputRef.current?.focus()
   }
 
   const formatTime = (dateStr) => {
@@ -88,13 +108,113 @@ export default function CommentSection({ mediaId, comments = [] }) {
                   </button>
                 )}
               </div>
+
+              {/* Reply reference */}
+              {c.reply_to_user && (
+                <div
+                  className="text-[10px] mt-0.5 px-2 py-0.5 rounded border-l-2"
+                  style={{
+                    color: 'var(--tg-theme-hint-color)',
+                    borderColor: 'var(--tg-theme-button-color)',
+                    backgroundColor: 'var(--tg-theme-secondary-bg-color)',
+                  }}
+                >
+                  <span className="font-semibold">{c.reply_to_user}</span>
+                  {': '}
+                  {(c.reply_to_text || '').slice(0, 60)}
+                  {(c.reply_to_text || '').length > 60 ? '...' : ''}
+                </div>
+              )}
+
               <p className="text-xs mt-0.5" style={{ color: 'var(--tg-theme-text-color)' }}>
                 {c.text}
               </p>
+
+              {/* Reactions display + action buttons */}
+              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
+                {/* Existing reactions */}
+                {(c.reactions || []).map((r) => (
+                  <button
+                    key={r.emoji}
+                    onClick={() => reactMutation.mutate({ commentId: c.id, emoji: r.emoji })}
+                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px]"
+                    style={{
+                      backgroundColor: r.users?.some((u) => u.user_id === currentUser?.id)
+                        ? 'var(--tg-theme-button-color)'
+                        : 'var(--tg-theme-secondary-bg-color)',
+                      color: r.users?.some((u) => u.user_id === currentUser?.id)
+                        ? 'var(--tg-theme-button-text-color)'
+                        : 'var(--tg-theme-text-color)',
+                    }}
+                    title={r.users?.map((u) => u.display_name).join(', ')}
+                  >
+                    {r.emoji} {r.count}
+                  </button>
+                ))}
+
+                {/* Add reaction button */}
+                <button
+                  onClick={() => setShowEmojiPicker(showEmojiPicker === c.id ? null : c.id)}
+                  className="text-[11px] px-1 py-0.5 rounded-full"
+                  style={{
+                    backgroundColor: 'var(--tg-theme-secondary-bg-color)',
+                    color: 'var(--tg-theme-hint-color)',
+                  }}
+                >
+                  +
+                </button>
+
+                {/* Reply button */}
+                <button
+                  onClick={() => handleReply(c)}
+                  className="text-[10px] ml-1"
+                  style={{ color: 'var(--tg-theme-hint-color)' }}
+                >
+                  ответить
+                </button>
+              </div>
+
+              {/* Emoji picker */}
+              {showEmojiPicker === c.id && (
+                <div
+                  className="flex gap-1 mt-1 p-1.5 rounded-lg"
+                  style={{ backgroundColor: 'var(--tg-theme-secondary-bg-color)' }}
+                >
+                  {REACTION_EMOJIS.map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => reactMutation.mutate({ commentId: c.id, emoji })}
+                      className="text-lg hover:scale-125 transition-transform"
+                    >
+                      {emoji}
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         ))}
       </div>
+
+      {/* Reply indicator */}
+      {replyTo && (
+        <div
+          className="flex items-center gap-2 px-3 py-1.5 rounded-t-lg text-xs"
+          style={{
+            backgroundColor: 'var(--tg-theme-secondary-bg-color)',
+            color: 'var(--tg-theme-hint-color)',
+          }}
+        >
+          <span className="flex-1 truncate">
+            Ответ для <b style={{ color: 'var(--tg-theme-text-color)' }}>{replyTo.user_display_name}</b>
+            {': '}
+            {replyTo.text?.slice(0, 40)}{replyTo.text?.length > 40 ? '...' : ''}
+          </span>
+          <button onClick={() => setReplyTo(null)} className="text-sm font-bold">
+            ×
+          </button>
+        </div>
+      )}
 
       <form
         onSubmit={handleSubmit}
@@ -102,15 +222,17 @@ export default function CommentSection({ mediaId, comments = [] }) {
         style={{ backgroundColor: 'var(--tg-theme-bg-color)' }}
       >
         <input
+          ref={inputRef}
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
           onFocus={scrollToBottom}
-          placeholder="Написать комментарий..."
+          placeholder={replyTo ? 'Написать ответ...' : 'Написать комментарий...'}
           className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
           style={{
             backgroundColor: 'var(--tg-theme-secondary-bg-color)',
             color: 'var(--tg-theme-text-color)',
+            borderTopLeftRadius: replyTo ? 0 : undefined,
           }}
         />
         <button

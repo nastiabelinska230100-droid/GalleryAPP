@@ -53,8 +53,13 @@ export async function fetchComments(mediaId) {
   return data
 }
 
-export async function addComment(mediaId, text) {
-  const { data } = await api.post(`/media/${mediaId}/comments`, { text })
+export async function addComment(mediaId, text, replyToId = null) {
+  const { data } = await api.post(`/media/${mediaId}/comments`, { text, reply_to_id: replyToId })
+  return data
+}
+
+export async function toggleReaction(commentId, emoji) {
+  const { data } = await api.post(`/comments/${commentId}/react`, { emoji })
   return data
 }
 
