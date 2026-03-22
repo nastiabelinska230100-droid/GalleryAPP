@@ -130,44 +130,41 @@ export default function CommentSection({ mediaId, comments = [] }) {
                 {c.text}
               </p>
 
-              {/* Reactions display + action buttons */}
-              <div className="flex items-center gap-1.5 mt-1 flex-wrap">
-                {/* Existing reactions */}
-                {(c.reactions || []).map((r) => (
-                  <button
-                    key={r.emoji}
-                    onClick={() => reactMutation.mutate({ commentId: c.id, emoji: r.emoji })}
-                    className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px]"
-                    style={{
-                      backgroundColor: r.users?.some((u) => u.user_id === currentUser?.id)
-                        ? 'var(--tg-theme-button-color)'
-                        : 'var(--tg-theme-secondary-bg-color)',
-                      color: r.users?.some((u) => u.user_id === currentUser?.id)
-                        ? 'var(--tg-theme-button-text-color)'
-                        : 'var(--tg-theme-text-color)',
-                    }}
-                    title={r.users?.map((u) => u.display_name).join(', ')}
-                  >
-                    {r.emoji} {r.count}
-                  </button>
-                ))}
+              {/* Existing reactions */}
+              {(c.reactions || []).length > 0 && (
+                <div className="flex items-center gap-1 mt-1 flex-wrap">
+                  {c.reactions.map((r) => (
+                    <button
+                      key={r.emoji}
+                      onClick={() => reactMutation.mutate({ commentId: c.id, emoji: r.emoji })}
+                      className="flex items-center gap-0.5 px-1.5 py-0.5 rounded-full text-[11px]"
+                      style={{
+                        backgroundColor: r.users?.some((u) => u.user_id === currentUser?.id)
+                          ? 'var(--tg-theme-button-color)'
+                          : 'var(--tg-theme-secondary-bg-color)',
+                        color: r.users?.some((u) => u.user_id === currentUser?.id)
+                          ? 'var(--tg-theme-button-text-color)'
+                          : 'var(--tg-theme-text-color)',
+                      }}
+                    >
+                      {r.emoji} {r.count}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-                {/* Add reaction button */}
+              {/* Action buttons — bottom right */}
+              <div className="flex items-center justify-end gap-3 mt-1">
                 <button
                   onClick={() => setShowEmojiPicker(showEmojiPicker === c.id ? null : c.id)}
-                  className="text-[11px] px-1 py-0.5 rounded-full"
-                  style={{
-                    backgroundColor: 'var(--tg-theme-secondary-bg-color)',
-                    color: 'var(--tg-theme-hint-color)',
-                  }}
+                  className="text-[11px]"
+                  style={{ color: 'var(--tg-theme-hint-color)' }}
                 >
-                  +
+                  😊
                 </button>
-
-                {/* Reply button */}
                 <button
                   onClick={() => handleReply(c)}
-                  className="text-[10px] ml-1"
+                  className="text-[10px]"
                   style={{ color: 'var(--tg-theme-hint-color)' }}
                 >
                   ответить
@@ -177,14 +174,14 @@ export default function CommentSection({ mediaId, comments = [] }) {
               {/* Emoji picker */}
               {showEmojiPicker === c.id && (
                 <div
-                  className="flex gap-1 mt-1 p-1.5 rounded-lg"
+                  className="flex gap-1.5 mt-1 p-2 rounded-lg justify-center"
                   style={{ backgroundColor: 'var(--tg-theme-secondary-bg-color)' }}
                 >
                   {REACTION_EMOJIS.map((emoji) => (
                     <button
                       key={emoji}
                       onClick={() => reactMutation.mutate({ commentId: c.id, emoji })}
-                      className="text-lg hover:scale-125 transition-transform"
+                      className="text-xl active:scale-125 transition-transform"
                     >
                       {emoji}
                     </button>
