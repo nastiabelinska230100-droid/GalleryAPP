@@ -10,7 +10,6 @@ from backend.routers.comments import get_reactions_for_comments, format_comment
 
 router = APIRouter(prefix="/api/media", tags=["media"])
 
-MAX_PHOTO_SIZE = 15 * 1024 * 1024
 MAX_VIDEO_SIZE = 50 * 1024 * 1024
 
 
@@ -37,11 +36,10 @@ async def upload_media(
         is_video = lower_name.endswith((".mp4", ".mov")) or "video" in content_type
         is_heic = lower_name.endswith((".heic", ".heif"))
 
-        max_size = MAX_VIDEO_SIZE if is_video else MAX_PHOTO_SIZE
-        if len(file_bytes) > max_size:
+        if is_video and len(file_bytes) > MAX_VIDEO_SIZE:
             raise HTTPException(
                 status_code=413,
-                detail=f"Файл {filename} слишком большой. Максимум: {max_size // (1024*1024)}MB",
+                detail=f"Файл {filename} слишком большой. Максимум: {MAX_VIDEO_SIZE // (1024*1024)}MB",
             )
 
         if is_heic:
