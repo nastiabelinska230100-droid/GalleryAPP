@@ -82,7 +82,7 @@ async def upload_media(
             "thumbnail_url": thumbnail_url,
         })
 
-        asyncio.create_task(notify_new_upload(user["id"], file_type, thumbnail_url))
+        asyncio.create_task(notify_new_upload(user["id"], file_type, str(media_id), thumbnail_url))
 
     return results
 

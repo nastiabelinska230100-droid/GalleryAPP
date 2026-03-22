@@ -13,7 +13,7 @@ def get_bot() -> Bot:
     return _bot
 
 
-async def notify_new_upload(uploader_id: int, file_type: str, thumbnail_url: str | None = None):
+async def notify_new_upload(uploader_id: int, file_type: str, media_id: str | None = None, thumbnail_url: str | None = None):
     uploader = query_one("SELECT * FROM users WHERE id = %s", (uploader_id,))
     if not uploader:
         return
@@ -24,6 +24,15 @@ async def notify_new_upload(uploader_id: int, file_type: str, thumbnail_url: str
     type_label = "фото" if file_type == "photo" else "видео"
     text = f"📸 {uploader_name} добавил(а) новое {type_label}!"
 
+    kb = None
+    if media_id:
+        kb = InlineKeyboardMarkup(inline_keyboard=[
+            [InlineKeyboardButton(
+                text=f"Открыть {type_label}",
+                web_app=WebAppInfo(url=f"{WEBHOOK_URL}/media/{media_id}"),
+            )]
+        ])
+
     bot = get_bot()
     for user in all_users:
         if user["id"] == uploader_id:
@@ -32,7 +41,7 @@ async def notify_new_upload(uploader_id: int, file_type: str, thumbnail_url: str
         if not tg_id:
             continue
         try:
-            await bot.send_message(tg_id, text)
+            await bot.send_message(tg_id, text, reply_markup=kb)
         except Exception:
             pass
 
