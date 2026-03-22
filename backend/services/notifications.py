@@ -1,5 +1,6 @@
 from aiogram import Bot
-from backend.config import BOT_TOKEN
+from aiogram.types import InlineKeyboardMarkup, InlineKeyboardButton, WebAppInfo
+from backend.config import BOT_TOKEN, WEBHOOK_URL
 from backend.services.database import query, query_one
 
 _bot: Bot | None = None
@@ -32,6 +33,40 @@ async def notify_new_upload(uploader_id: int, file_type: str, thumbnail_url: str
             continue
         try:
             await bot.send_message(tg_id, text)
+        except Exception:
+            pass
+
+
+async def notify_new_comment(commenter_id: int, media_id: str, comment_text: str):
+    commenter = query_one("SELECT * FROM users WHERE id = %s", (commenter_id,))
+    if not commenter:
+        return
+
+    media = query_one("SELECT * FROM media WHERE id = %s", (media_id,))
+    if not media:
+        return
+
+    all_users = query("SELECT * FROM users WHERE telegram_id IS NOT NULL")
+    name = commenter["display_name"]
+    preview = comment_text[:100]
+    text = f"💬 {name} оставил(а) комментарий:\n«{preview}»"
+
+    kb = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(
+            text="Открыть фото",
+            web_app=WebAppInfo(url=f"{WEBHOOK_URL}/media/{media_id}"),
+        )]
+    ])
+
+    bot = get_bot()
+    for user in all_users:
+        if user["id"] == commenter_id:
+            continue
+        tg_id = user.get("telegram_id")
+        if not tg_id:
+            continue
+        try:
+            await bot.send_message(tg_id, text, reply_markup=kb)
         except Exception:
             pass
 

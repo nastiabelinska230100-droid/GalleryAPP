@@ -1,6 +1,8 @@
+import asyncio
 from fastapi import APIRouter, Header, HTTPException
 from pydantic import BaseModel
 from backend.services.database import query, query_one, execute, insert_returning
+from backend.services.notifications import notify_new_comment
 from backend.routers.users import get_current_user
 
 router = APIRouter(tags=["comments"])
@@ -51,6 +53,9 @@ async def add_comment(
     result["user_name"] = user["name"]
     result["user_display_name"] = user["display_name"]
     result["user_avatar_url"] = user.get("avatar_url")
+
+    asyncio.create_task(notify_new_comment(user["id"], media_id, body.text))
+
     return result
 
 
