@@ -1,7 +1,7 @@
 import io
 import subprocess
 import tempfile
-from PIL import Image
+from PIL import Image, ImageOps
 
 try:
     from pillow_heif import register_heif_opener
@@ -10,8 +10,17 @@ except ImportError:
     pass
 
 
+def fix_orientation(img: Image.Image) -> Image.Image:
+    try:
+        img = ImageOps.exif_transpose(img)
+    except Exception:
+        pass
+    return img
+
+
 def convert_heic_to_jpg(file_bytes: bytes) -> bytes:
     img = Image.open(io.BytesIO(file_bytes))
+    img = fix_orientation(img)
     buf = io.BytesIO()
     img.convert("RGB").save(buf, format="JPEG", quality=85)
     return buf.getvalue()
@@ -19,6 +28,7 @@ def convert_heic_to_jpg(file_bytes: bytes) -> bytes:
 
 def generate_thumbnail(file_bytes: bytes, size: int = 400) -> bytes:
     img = Image.open(io.BytesIO(file_bytes))
+    img = fix_orientation(img)
     img = img.convert("RGB")
     w, h = img.size
     side = min(w, h)
