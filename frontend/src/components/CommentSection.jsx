@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { addComment, deleteComment } from '../api'
 import { useCurrentUser } from '../hooks/useUser'
@@ -7,6 +7,16 @@ export default function CommentSection({ mediaId, comments = [] }) {
   const [text, setText] = useState('')
   const { data: currentUser } = useCurrentUser()
   const queryClient = useQueryClient()
+  const bottomRef = useRef(null)
+  const formRef = useRef(null)
+
+  const scrollToBottom = useCallback(() => {
+    setTimeout(() => {
+      if (bottomRef.current) {
+        bottomRef.current.scrollIntoView({ behavior: 'smooth', block: 'end' })
+      }
+    }, 400)
+  }, [])
 
   const addMutation = useMutation({
     mutationFn: (commentText) => addComment(mediaId, commentText),
@@ -95,11 +105,7 @@ export default function CommentSection({ mediaId, comments = [] }) {
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
-          onFocus={(e) => {
-            setTimeout(() => {
-              e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
-            }, 400)
-          }}
+          onFocus={scrollToBottom}
           placeholder="Написать комментарий..."
           className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
           style={{
@@ -120,7 +126,7 @@ export default function CommentSection({ mediaId, comments = [] }) {
         </button>
       </form>
       {/* Отступ снизу чтобы клавиатура не перекрывала */}
-      <div style={{ height: 250 }} />
+      <div ref={bottomRef} style={{ height: 350 }} />
     </div>
   )
 }

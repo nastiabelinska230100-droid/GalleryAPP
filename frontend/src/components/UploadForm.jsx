@@ -16,41 +16,13 @@ export default function UploadForm() {
   const uploadMutation = useUploadMedia()
   const { data: users = [] } = useUsers()
 
-  const generateVideoThumbnail = (file) => {
-    return new Promise((resolve) => {
-      const video = document.createElement('video')
-      video.preload = 'metadata'
-      video.muted = true
-      video.playsInline = true
-      video.onloadeddata = () => {
-        video.currentTime = 1
-      }
-      video.onseeked = () => {
-        const canvas = document.createElement('canvas')
-        canvas.width = video.videoWidth
-        canvas.height = video.videoHeight
-        canvas.getContext('2d').drawImage(video, 0, 0)
-        const thumbUrl = canvas.toDataURL('image/jpeg', 0.7)
-        URL.revokeObjectURL(video.src)
-        resolve(thumbUrl)
-      }
-      video.onerror = () => resolve(null)
-      video.src = URL.createObjectURL(file)
-    })
-  }
-
-  const handleFiles = async (newFiles) => {
+  const handleFiles = (newFiles) => {
     const fileArray = Array.from(newFiles)
     setFiles((prev) => [...prev, ...fileArray])
-    for (const file of fileArray) {
-      if (file.type.startsWith('video/')) {
-        const thumbUrl = await generateVideoThumbnail(file)
-        setPreviews((prev) => [...prev, { name: file.name, url: URL.createObjectURL(file), thumb: thumbUrl, type: file.type }])
-      } else if (file.type.startsWith('image/')) {
-        const url = URL.createObjectURL(file)
-        setPreviews((prev) => [...prev, { name: file.name, url, thumb: null, type: file.type }])
-      }
-    }
+    fileArray.forEach((file) => {
+      const url = URL.createObjectURL(file)
+      setPreviews((prev) => [...prev, { name: file.name, url, type: file.type }])
+    })
   }
 
   const handleDrop = (e) => {
@@ -147,13 +119,15 @@ export default function UploadForm() {
             <div key={i} className="relative aspect-square rounded-lg overflow-hidden"
               style={{ backgroundColor: 'var(--tg-theme-secondary-bg-color)' }}>
               {p.type.startsWith('video/') ? (
-                <div className="w-full h-full relative">
-                  {p.thumb ? (
-                    <img src={p.thumb} alt={p.name} className="w-full h-full object-cover" />
-                  ) : (
-                    <div className="w-full h-full" style={{ backgroundColor: '#333' }} />
-                  )}
-                  <div className="absolute inset-0 flex items-center justify-center">
+                <div className="w-full h-full relative bg-black">
+                  <video
+                    src={p.url + '#t=1'}
+                    className="w-full h-full object-cover"
+                    muted
+                    playsInline
+                    preload="auto"
+                  />
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                     <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
                       <span className="text-white text-sm ml-0.5">▶</span>
                     </div>
