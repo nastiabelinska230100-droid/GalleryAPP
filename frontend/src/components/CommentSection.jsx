@@ -80,7 +80,7 @@ export default function CommentSection({ mediaId, comments = [] }) {
 
       <form
         onSubmit={handleSubmit}
-        className="flex gap-2 sticky bottom-0 py-2"
+        className="flex gap-2 py-2"
         style={{ backgroundColor: 'var(--tg-theme-bg-color)' }}
       >
         <input
@@ -88,7 +88,9 @@ export default function CommentSection({ mediaId, comments = [] }) {
           value={text}
           onChange={(e) => setText(e.target.value)}
           onFocus={(e) => {
-            setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
+            setTimeout(() => {
+              e.target.scrollIntoView({ behavior: 'smooth', block: 'center' })
+            }, 400)
           }}
           placeholder="Написать комментарий..."
           className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
@@ -109,6 +111,8 @@ export default function CommentSection({ mediaId, comments = [] }) {
           ➤
         </button>
       </form>
+      {/* Отступ снизу чтобы клавиатура не перекрывала */}
+      <div style={{ height: 250 }} />
     </div>
   )
 }

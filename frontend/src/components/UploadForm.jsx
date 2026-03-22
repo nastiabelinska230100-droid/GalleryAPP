@@ -113,9 +113,16 @@ export default function UploadForm() {
       {previews.length > 0 && (
         <div className="grid grid-cols-4 gap-2">
           {previews.map((p, i) => (
-            <div key={i} className="relative aspect-square rounded-lg overflow-hidden">
+            <div key={i} className="relative aspect-square rounded-lg overflow-hidden"
+              style={{ backgroundColor: 'var(--tg-theme-secondary-bg-color)' }}>
               {p.type.startsWith('video/') ? (
-                <video src={p.url} className="w-full h-full object-cover" />
+                <div className="w-full h-full relative">
+                  <video src={p.url} className="w-full h-full object-cover" preload="metadata" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
+                    <span className="text-white text-2xl">▶</span>
+                    <span className="text-white text-[9px] mt-1 px-1 truncate max-w-full">{p.name}</span>
+                  </div>
+                </div>
               ) : (
                 <img src={p.url} alt={p.name} className="w-full h-full object-cover" />
               )}
