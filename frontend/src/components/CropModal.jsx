@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect } from 'react'
 import Cropper from 'react-easy-crop'
 
 async function getCroppedImg(imageSrc, pixelCrop) {
-  // Загружаем как blob чтобы обойти CORS
   const response = await fetch(imageSrc)
   const blob = await response.blob()
   const blobUrl = URL.createObjectURL(blob)
@@ -49,7 +48,6 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
   const [localSrc, setLocalSrc] = useState(null)
   const [saving, setSaving] = useState(false)
 
-  // Загружаем картинку как blob для Cropper тоже
   useEffect(() => {
     let cancelled = false
     fetch(imageSrc)
@@ -61,7 +59,6 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
       })
     return () => {
       cancelled = true
-      if (localSrc) URL.revokeObjectURL(localSrc)
     }
   }, [imageSrc])
 
@@ -70,7 +67,7 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
   }, [])
 
   const handleConfirm = async () => {
-    if (!croppedAreaPixels || !localSrc) return
+    if (!croppedAreaPixels) return
     setSaving(true)
     try {
       const blob = await getCroppedImg(imageSrc, croppedAreaPixels)
@@ -91,8 +88,9 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
   }
 
   return (
-    <div className="fixed inset-0 z-[100] flex flex-col" style={{ backgroundColor: '#000' }}>
-      <div className="relative flex-1">
+    <div className="fixed inset-0 z-[100]" style={{ backgroundColor: '#000' }}>
+      {/* Кроппер — занимает всё кроме нижних 70px */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 70 }}>
         <Cropper
           image={localSrc}
           crop={crop}
@@ -104,13 +102,29 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
         />
       </div>
 
-      <div className="flex-shrink-0 p-4 flex gap-3 justify-center" style={{ backgroundColor: '#000' }}>
+      {/* Кнопки — всегда внизу, фиксированная высота */}
+      <div style={{
+        position: 'absolute',
+        bottom: 0,
+        left: 0,
+        right: 0,
+        height: 70,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+        backgroundColor: '#000',
+      }}>
         <button
           onClick={onCancel}
-          className="px-6 py-2.5 rounded-xl text-sm font-medium"
           style={{
-            backgroundColor: 'var(--tg-theme-secondary-bg-color)',
-            color: 'var(--tg-theme-text-color)',
+            padding: '10px 24px',
+            borderRadius: 12,
+            fontSize: 14,
+            fontWeight: 500,
+            backgroundColor: '#333',
+            color: '#fff',
+            border: 'none',
           }}
         >
           Отмена
@@ -118,10 +132,15 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
         <button
           onClick={handleConfirm}
           disabled={saving}
-          className="px-6 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
           style={{
+            padding: '10px 24px',
+            borderRadius: 12,
+            fontSize: 14,
+            fontWeight: 500,
             backgroundColor: 'var(--tg-theme-button-color)',
             color: 'var(--tg-theme-button-text-color)',
+            border: 'none',
+            opacity: saving ? 0.5 : 1,
           }}
         >
           {saving ? 'Сохраняю...' : 'Готово'}
