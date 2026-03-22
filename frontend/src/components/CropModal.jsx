@@ -81,16 +81,70 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
 
   if (!localSrc) {
     return (
-      <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: '#000' }}>
-        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#fff', borderTopColor: 'transparent' }} />
+      <div style={{
+        position: 'fixed', inset: 0, zIndex: 200,
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        backgroundColor: '#000',
+      }}>
+        <div style={{
+          width: 32, height: 32, border: '2px solid #fff',
+          borderTopColor: 'transparent', borderRadius: '50%',
+          animation: 'spin 1s linear infinite',
+        }} />
       </div>
     )
   }
 
   return (
-    <div className="fixed inset-0 z-[100]" style={{ backgroundColor: '#000' }}>
-      {/* Кроппер — занимает всё кроме нижних 70px */}
-      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 70 }}>
+    <div style={{ position: 'fixed', inset: 0, zIndex: 200, backgroundColor: '#000' }}>
+      {/* Кнопки сверху */}
+      <div style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        zIndex: 210,
+        display: 'flex',
+        justifyContent: 'space-between',
+        padding: '12px 16px',
+        backgroundColor: 'rgba(0,0,0,0.7)',
+      }}>
+        <button
+          onClick={onCancel}
+          style={{
+            padding: '8px 20px',
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor: '#555',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+          }}
+        >
+          Отмена
+        </button>
+        <button
+          onClick={handleConfirm}
+          disabled={saving}
+          style={{
+            padding: '8px 20px',
+            borderRadius: 10,
+            fontSize: 14,
+            fontWeight: 600,
+            backgroundColor: '#2481cc',
+            color: '#fff',
+            border: 'none',
+            cursor: 'pointer',
+            opacity: saving ? 0.5 : 1,
+          }}
+        >
+          {saving ? 'Сохраняю...' : 'Готово'}
+        </button>
+      </div>
+
+      {/* Кроппер на весь экран */}
+      <div style={{ position: 'absolute', inset: 0 }}>
         <Cropper
           image={localSrc}
           crop={crop}
@@ -100,51 +154,6 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
           onZoomChange={setZoom}
           onCropComplete={onCropComplete}
         />
-      </div>
-
-      {/* Кнопки — всегда внизу, фиксированная высота */}
-      <div style={{
-        position: 'absolute',
-        bottom: 0,
-        left: 0,
-        right: 0,
-        height: 70,
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-        backgroundColor: '#000',
-      }}>
-        <button
-          onClick={onCancel}
-          style={{
-            padding: '10px 24px',
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 500,
-            backgroundColor: '#333',
-            color: '#fff',
-            border: 'none',
-          }}
-        >
-          Отмена
-        </button>
-        <button
-          onClick={handleConfirm}
-          disabled={saving}
-          style={{
-            padding: '10px 24px',
-            borderRadius: 12,
-            fontSize: 14,
-            fontWeight: 500,
-            backgroundColor: 'var(--tg-theme-button-color)',
-            color: 'var(--tg-theme-button-text-color)',
-            border: 'none',
-            opacity: saving ? 0.5 : 1,
-          }}
-        >
-          {saving ? 'Сохраняю...' : 'Готово'}
-        </button>
       </div>
     </div>
   )
