@@ -35,3 +35,12 @@ body {
   0% { background-position: 200% 0; }
   100% { background-position: -200% 0; }
 }
+
+html, body {
+  height: 100%;
+  overflow: auto;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}

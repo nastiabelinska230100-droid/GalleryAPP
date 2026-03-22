@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useRef } from 'react'
 import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { addComment, deleteComment } from '../api'
 import { useCurrentUser } from '../hooks/useUser'
@@ -78,11 +78,18 @@ export default function CommentSection({ mediaId, comments = [] }) {
         ))}
       </div>
 
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      <form
+        onSubmit={handleSubmit}
+        className="flex gap-2 sticky bottom-0 py-2"
+        style={{ backgroundColor: 'var(--tg-theme-bg-color)' }}
+      >
         <input
           type="text"
           value={text}
           onChange={(e) => setText(e.target.value)}
+          onFocus={(e) => {
+            setTimeout(() => e.target.scrollIntoView({ behavior: 'smooth', block: 'center' }), 300)
+          }}
           placeholder="Написать комментарий..."
           className="flex-1 text-sm rounded-lg px-3 py-2 outline-none"
           style={{
