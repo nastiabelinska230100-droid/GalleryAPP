@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useMediaList } from '../hooks/useMedia'
 import MediaGrid from '../components/MediaGrid'
 import FilterBar from '../components/FilterBar'
@@ -7,6 +7,7 @@ import Lightbox from '../components/Lightbox'
 
 export default function Gallery() {
   const { userName } = useParams()
+  const navigate = useNavigate()
   const [type, setType] = useState('')
   const [sort, setSort] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
@@ -36,17 +37,23 @@ export default function Gallery() {
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
+    const goBack = () => navigate('/')
     if (tg?.BackButton) {
       tg.BackButton.show()
-      return () => tg.BackButton.hide()
+      tg.BackButton.onClick(goBack)
+      return () => {
+        tg.BackButton.hide()
+        tg.BackButton.offClick(goBack)
+      }
     }
-  }, [])
+  }, [navigate])
 
   const displayNames = { sasha: 'Саша', vika: 'Вика', nastya: 'Настя', max: 'Макс' }
 
   return (
     <div className="pb-16">
-      <div className="p-3">
+      <div className="p-3 flex items-center gap-2">
+        <button onClick={() => navigate('/')} className="text-lg">←</button>
         <h2 className="text-lg font-bold" style={{ color: 'var(--tg-theme-text-color)' }}>
           {displayNames[userName] || userName}
         </h2>

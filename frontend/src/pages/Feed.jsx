@@ -1,10 +1,12 @@
 import { useState, useCallback, useRef } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useMediaList } from '../hooks/useMedia'
 import MediaGrid from '../components/MediaGrid'
 import FilterBar from '../components/FilterBar'
 import Lightbox from '../components/Lightbox'
 
 export default function Feed() {
+  const navigate = useNavigate()
   const [type, setType] = useState('')
   const [sort, setSort] = useState('newest')
   const [selectedId, setSelectedId] = useState(null)
@@ -33,7 +35,8 @@ export default function Feed() {
 
   return (
     <div className="pb-16">
-      <div className="p-3">
+      <div className="p-3 flex items-center gap-2">
+        <button onClick={() => navigate('/')} className="text-lg">←</button>
         <h2 className="text-lg font-bold" style={{ color: 'var(--tg-theme-text-color)' }}>
           Все фото и видео
         </h2>

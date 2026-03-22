@@ -13,7 +13,7 @@ async def list_users():
     users = query("SELECT * FROM users ORDER BY id")
     result = []
     for u in users:
-        row = query_one("SELECT COUNT(*) as cnt FROM media WHERE uploader_id = %s", (u["id"],))
+        row = query_one("SELECT COUNT(*) as cnt FROM media_tags WHERE user_id = %s", (u["id"],))
         result.append({**u, "media_count": row["cnt"] if row else 0})
     return result
 
