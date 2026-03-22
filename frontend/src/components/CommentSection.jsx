@@ -9,10 +9,11 @@ export default function CommentSection({ mediaId, comments = [] }) {
   const queryClient = useQueryClient()
 
   const addMutation = useMutation({
-    mutationFn: (text) => addComment(mediaId, text),
+    mutationFn: (commentText) => addComment(mediaId, commentText),
     onSuccess: () => {
       setText('')
       queryClient.invalidateQueries({ queryKey: ['media', mediaId] })
+      queryClient.invalidateQueries({ queryKey: ['media'] })
     },
   })
 

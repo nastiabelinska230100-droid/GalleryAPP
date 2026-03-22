@@ -46,7 +46,10 @@ async def add_comment(
         "INSERT INTO comments (media_id, user_id, text) VALUES (%s, %s, %s) RETURNING *",
         (media_id, user["id"], body.text),
     )
-    return dict(row)
+    result = dict(row)
+    result["user_name"] = user["name"]
+    result["user_display_name"] = user["display_name"]
+    return result
 
 
 @router.delete("/api/comments/{comment_id}")
