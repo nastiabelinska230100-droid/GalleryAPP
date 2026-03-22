@@ -27,10 +27,9 @@ services:
       MEDIA_URL_PREFIX: /files
       PORT: "8000"
     volumes:
-      - media_storage:/app/media_storage
+      - /opt/gallery/media_storage:/app/media_storage
     ports:
       - "8000:8000"
 
 volumes:
   pgdata:
-  media_storage:
