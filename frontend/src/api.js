@@ -98,6 +98,11 @@ export async function linkUser(userId) {
   return data
 }
 
+export async function setUserAvatar(userId, mediaId) {
+  const { data } = await api.post(`/users/${userId}/avatar`, { media_id: mediaId })
+  return data
+}
+
 export async function fetchMe() {
   const { data } = await api.get('/users/me')
   return data

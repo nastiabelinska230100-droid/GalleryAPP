@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Header, HTTPException
+from pydantic import BaseModel
 from backend.services.database import query, query_one, execute
 
 router = APIRouter(prefix="/api/users", tags=["users"])
@@ -40,6 +41,29 @@ async def get_me(x_telegram_user_id: int = Header(..., alias="X-Telegram-User-Id
     if not user:
         raise HTTPException(status_code=404, detail="not_linked")
     return user
+
+
+class SetAvatarBody(BaseModel):
+    media_id: str
+
+
+@router.post("/{user_id}/avatar")
+async def set_avatar(
+    user_id: int,
+    body: SetAvatarBody,
+    x_telegram_user_id: int = Header(..., alias="X-Telegram-User-Id"),
+):
+    user = get_current_user(x_telegram_user_id)
+    if not user:
+        raise HTTPException(status_code=403, detail="not_linked")
+
+    media = query_one("SELECT * FROM media WHERE id = %s", (body.media_id,))
+    if not media:
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    avatar_url = media.get("thumbnail_url") or media.get("file_url")
+    execute("UPDATE users SET avatar_url = %s WHERE id = %s", (avatar_url, user_id))
+    return {"ok": True, "avatar_url": avatar_url}
 
 
 @router.get("/stats")

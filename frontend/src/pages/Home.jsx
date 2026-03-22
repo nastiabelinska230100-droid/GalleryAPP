@@ -25,14 +25,25 @@ export default function Home() {
                 <button
                   key={user.id}
                   onClick={() => navigate(`/gallery/${user.name}`)}
-                  className="relative rounded-xl p-4 text-left text-white overflow-hidden"
+                  className="relative rounded-xl text-left text-white overflow-hidden h-36"
                   style={{ backgroundColor: colors[i % colors.length] }}
                 >
-                  <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center text-lg font-bold mb-2">
-                    {user.display_name[0]}
+                  {user.avatar_url ? (
+                    <img
+                      src={user.avatar_url}
+                      alt={user.display_name}
+                      className="absolute inset-0 w-full h-full object-cover"
+                    />
+                  ) : null}
+                  <div className={`relative z-10 p-4 h-full flex flex-col justify-end ${user.avatar_url ? 'bg-gradient-to-t from-black/60 to-transparent' : ''}`}>
+                    {!user.avatar_url && (
+                      <div className="w-10 h-10 rounded-full bg-white/30 flex items-center justify-center text-lg font-bold mb-2">
+                        {user.display_name[0]}
+                      </div>
+                    )}
+                    <div className="font-semibold text-sm">{user.display_name}</div>
                   </div>
-                  <div className="font-semibold text-sm">{user.display_name}</div>
-                  <div className="absolute top-2 right-2 bg-white/30 text-xs px-2 py-0.5 rounded-full font-medium">
+                  <div className="absolute top-2 right-2 bg-black/40 text-xs px-2 py-0.5 rounded-full font-medium z-10">
                     {user.media_count || 0}
                   </div>
                 </button>

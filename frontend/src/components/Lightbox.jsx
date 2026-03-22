@@ -1,7 +1,9 @@
 import { useState, useRef, useEffect } from 'react'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToggleLike } from '../hooks/useLikes'
 import { useDeleteMedia, useMediaDetail } from '../hooks/useMedia'
 import { useCurrentUser } from '../hooks/useUser'
+import { setUserAvatar } from '../api'
 import CommentSection from './CommentSection'
 
 export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
@@ -10,7 +12,20 @@ export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
   const likeMutation = useToggleLike()
   const deleteMutation = useDeleteMedia()
   const [touchStart, setTouchStart] = useState(null)
+  const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [avatarSet, setAvatarSet] = useState(null)
   const videoRef = useRef(null)
+  const queryClient = useQueryClient()
+
+  const avatarMutation = useMutation({
+    mutationFn: ({ userId, mediaId }) => setUserAvatar(userId, mediaId),
+    onSuccess: (_, { userName }) => {
+      setAvatarSet(userName)
+      setShowAvatarPicker(false)
+      queryClient.invalidateQueries({ queryKey: ['users'] })
+      setTimeout(() => setAvatarSet(null), 2000)
+    },
+  })
 
   useEffect(() => {
     const tg = window.Telegram?.WebApp
@@ -158,6 +173,60 @@ export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
             </div>
           )}
         </div>
+
+        {/* Set as cover photo */}
+        {media.file_type === 'photo' && media.tagged_users && media.tagged_users.length > 0 && (
+          <div>
+            {avatarSet && (
+              <div className="text-xs text-green-500 mb-1">
+                Обложка для {avatarSet} установлена!
+              </div>
+            )}
+            {!showAvatarPicker ? (
+              <button
+                onClick={() => setShowAvatarPicker(true)}
+                className="text-xs px-3 py-1.5 rounded-lg"
+                style={{
+                  backgroundColor: 'var(--tg-theme-secondary-bg-color)',
+                  color: 'var(--tg-theme-text-color)',
+                }}
+              >
+                Сделать обложкой
+              </button>
+            ) : (
+              <div className="flex flex-wrap gap-2">
+                <span className="text-xs self-center" style={{ color: 'var(--tg-theme-hint-color)' }}>
+                  Для кого:
+                </span>
+                {media.tagged_users.map((u) => (
+                  <button
+                    key={u.id}
+                    onClick={() => avatarMutation.mutate({
+                      userId: u.id,
+                      mediaId: media.id,
+                      userName: u.display_name,
+                    })}
+                    disabled={avatarMutation.isPending}
+                    className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
+                    style={{
+                      backgroundColor: 'var(--tg-theme-button-color)',
+                      color: 'var(--tg-theme-button-text-color)',
+                    }}
+                  >
+                    {u.display_name}
+                  </button>
+                ))}
+                <button
+                  onClick={() => setShowAvatarPicker(false)}
+                  className="text-xs px-2 py-1.5"
+                  style={{ color: 'var(--tg-theme-hint-color)' }}
+                >
+                  Отмена
+                </button>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Comments */}
         <CommentSection mediaId={media.id} comments={media.comments || []} />
