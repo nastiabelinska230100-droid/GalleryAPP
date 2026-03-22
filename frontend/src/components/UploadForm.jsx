@@ -16,15 +16,41 @@ export default function UploadForm() {
   const uploadMutation = useUploadMedia()
   const { data: users = [] } = useUsers()
 
-  const handleFiles = (newFiles) => {
+  const generateVideoThumbnail = (file) => {
+    return new Promise((resolve) => {
+      const video = document.createElement('video')
+      video.preload = 'metadata'
+      video.muted = true
+      video.playsInline = true
+      video.onloadeddata = () => {
+        video.currentTime = 1
+      }
+      video.onseeked = () => {
+        const canvas = document.createElement('canvas')
+        canvas.width = video.videoWidth
+        canvas.height = video.videoHeight
+        canvas.getContext('2d').drawImage(video, 0, 0)
+        const thumbUrl = canvas.toDataURL('image/jpeg', 0.7)
+        URL.revokeObjectURL(video.src)
+        resolve(thumbUrl)
+      }
+      video.onerror = () => resolve(null)
+      video.src = URL.createObjectURL(file)
+    })
+  }
+
+  const handleFiles = async (newFiles) => {
     const fileArray = Array.from(newFiles)
     setFiles((prev) => [...prev, ...fileArray])
-    fileArray.forEach((file) => {
-      if (file.type.startsWith('image/') || file.type.startsWith('video/')) {
+    for (const file of fileArray) {
+      if (file.type.startsWith('video/')) {
+        const thumbUrl = await generateVideoThumbnail(file)
+        setPreviews((prev) => [...prev, { name: file.name, url: URL.createObjectURL(file), thumb: thumbUrl, type: file.type }])
+      } else if (file.type.startsWith('image/')) {
         const url = URL.createObjectURL(file)
-        setPreviews((prev) => [...prev, { name: file.name, url, type: file.type }])
+        setPreviews((prev) => [...prev, { name: file.name, url, thumb: null, type: file.type }])
       }
-    })
+    }
   }
 
   const handleDrop = (e) => {
@@ -103,9 +129,14 @@ export default function UploadForm() {
           ref={fileInputRef}
           type="file"
           multiple
-          accept="image/*,video/*,.heic,.heif"
+          accept="image/*,video/mp4,video/quicktime,.heic,.heif"
           className="hidden"
-          onChange={(e) => handleFiles(e.target.files)}
+          onChange={(e) => {
+            if (e.target.files?.length) {
+              handleFiles(e.target.files)
+            }
+            e.target.value = ''
+          }}
         />
       </div>
 
@@ -117,10 +148,18 @@ export default function UploadForm() {
               style={{ backgroundColor: 'var(--tg-theme-secondary-bg-color)' }}>
               {p.type.startsWith('video/') ? (
                 <div className="w-full h-full relative">
-                  <video src={p.url} className="w-full h-full object-cover" preload="metadata" />
-                  <div className="absolute inset-0 flex flex-col items-center justify-center bg-black/30">
-                    <span className="text-white text-2xl">▶</span>
-                    <span className="text-white text-[9px] mt-1 px-1 truncate max-w-full">{p.name}</span>
+                  {p.thumb ? (
+                    <img src={p.thumb} alt={p.name} className="w-full h-full object-cover" />
+                  ) : (
+                    <div className="w-full h-full" style={{ backgroundColor: '#333' }} />
+                  )}
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <div className="w-8 h-8 rounded-full bg-black/50 flex items-center justify-center">
+                      <span className="text-white text-sm ml-0.5">▶</span>
+                    </div>
+                  </div>
+                  <div className="absolute bottom-0 left-0 right-0 px-1 py-0.5 bg-black/50">
+                    <span className="text-white text-[8px] truncate block">{p.name}</span>
                   </div>
                 </div>
               ) : (
