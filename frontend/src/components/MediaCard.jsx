@@ -40,15 +40,6 @@ export default function MediaCard({ media, onClick }) {
               💬 {media.comment_count || 0}
             </span>
           </div>
-          {media.tags && media.tags.length > 0 && (
-            <div className="flex gap-1">
-              {media.tags.map((tag) => (
-                <span key={tag} className="bg-white/20 px-1 rounded text-[10px]">
-                  {tag}
-                </span>
-              ))}
-            </div>
-          )}
         </div>
       </div>
     </div>

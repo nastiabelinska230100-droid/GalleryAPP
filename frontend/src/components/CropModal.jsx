@@ -1,10 +1,14 @@
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import Cropper from 'react-easy-crop'
 
-function getCroppedImg(imageSrc, pixelCrop) {
-  return new Promise((resolve) => {
+async function getCroppedImg(imageSrc, pixelCrop) {
+  // Загружаем как blob чтобы обойти CORS
+  const response = await fetch(imageSrc)
+  const blob = await response.blob()
+  const blobUrl = URL.createObjectURL(blob)
+
+  return new Promise((resolve, reject) => {
     const image = new window.Image()
-    image.crossOrigin = 'anonymous'
     image.onload = () => {
       const canvas = document.createElement('canvas')
       canvas.width = pixelCrop.width
@@ -21,9 +25,20 @@ function getCroppedImg(imageSrc, pixelCrop) {
         pixelCrop.width,
         pixelCrop.height,
       )
-      canvas.toBlob((blob) => resolve(blob), 'image/jpeg', 0.9)
+      canvas.toBlob(
+        (resultBlob) => {
+          URL.revokeObjectURL(blobUrl)
+          resolve(resultBlob)
+        },
+        'image/jpeg',
+        0.9,
+      )
     }
-    image.src = imageSrc
+    image.onerror = () => {
+      URL.revokeObjectURL(blobUrl)
+      reject(new Error('Failed to load image'))
+    }
+    image.src = blobUrl
   })
 }
 
@@ -31,22 +46,55 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
   const [crop, setCrop] = useState({ x: 0, y: 0 })
   const [zoom, setZoom] = useState(1)
   const [croppedAreaPixels, setCroppedAreaPixels] = useState(null)
+  const [localSrc, setLocalSrc] = useState(null)
+  const [saving, setSaving] = useState(false)
+
+  // Загружаем картинку как blob для Cropper тоже
+  useEffect(() => {
+    let cancelled = false
+    fetch(imageSrc)
+      .then((r) => r.blob())
+      .then((blob) => {
+        if (!cancelled) {
+          setLocalSrc(URL.createObjectURL(blob))
+        }
+      })
+    return () => {
+      cancelled = true
+      if (localSrc) URL.revokeObjectURL(localSrc)
+    }
+  }, [imageSrc])
 
   const onCropComplete = useCallback((_, croppedPixels) => {
     setCroppedAreaPixels(croppedPixels)
   }, [])
 
   const handleConfirm = async () => {
-    if (!croppedAreaPixels) return
-    const blob = await getCroppedImg(imageSrc, croppedAreaPixels)
-    onConfirm(blob)
+    if (!croppedAreaPixels || !localSrc) return
+    setSaving(true)
+    try {
+      const blob = await getCroppedImg(imageSrc, croppedAreaPixels)
+      onConfirm(blob)
+    } catch (e) {
+      console.error('Crop error:', e)
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  if (!localSrc) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: '#000' }}>
+        <div className="w-8 h-8 border-2 border-t-transparent rounded-full animate-spin" style={{ borderColor: '#fff', borderTopColor: 'transparent' }} />
+      </div>
+    )
   }
 
   return (
     <div className="fixed inset-0 z-[100] flex flex-col" style={{ backgroundColor: '#000' }}>
       <div className="relative flex-1">
         <Cropper
-          image={imageSrc}
+          image={localSrc}
           crop={crop}
           zoom={zoom}
           aspect={1}
@@ -69,13 +117,14 @@ export default function CropModal({ imageSrc, onConfirm, onCancel }) {
         </button>
         <button
           onClick={handleConfirm}
-          className="px-6 py-2.5 rounded-xl text-sm font-medium"
+          disabled={saving}
+          className="px-6 py-2.5 rounded-xl text-sm font-medium disabled:opacity-50"
           style={{
             backgroundColor: 'var(--tg-theme-button-color)',
             color: 'var(--tg-theme-button-text-color)',
           }}
         >
-          Готово
+          {saving ? 'Сохраняю...' : 'Готово'}
         </button>
       </div>
     </div>
