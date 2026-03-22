@@ -47,12 +47,20 @@ export default function CommentSection({ mediaId, comments = [] }) {
       <div className="space-y-3 mb-3 max-h-60 overflow-y-auto">
         {comments.map((c) => (
           <div key={c.id} className="flex gap-2">
-            <div
-              className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
-              style={{ backgroundColor: colors[(c.user_id || 0) % colors.length] }}
-            >
-              {(c.user_display_name || '?')[0]}
-            </div>
+            {c.user_avatar_url ? (
+              <img
+                src={c.user_avatar_url}
+                alt={c.user_display_name}
+                className="w-8 h-8 rounded-full object-cover flex-shrink-0"
+              />
+            ) : (
+              <div
+                className="w-8 h-8 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0"
+                style={{ backgroundColor: colors[(c.user_id || 0) % colors.length] }}
+              >
+                {(c.user_display_name || '?')[0]}
+              </div>
+            )}
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
                 <span className="text-xs font-semibold" style={{ color: 'var(--tg-theme-text-color)' }}>

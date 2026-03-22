@@ -13,7 +13,7 @@ class CommentCreate(BaseModel):
 @router.get("/api/media/{media_id}/comments")
 async def list_comments(media_id: str):
     rows = query(
-        """SELECT c.*, u.name as user_name, u.display_name as user_display_name
+        """SELECT c.*, u.name as user_name, u.display_name as user_display_name, u.avatar_url as user_avatar_url
            FROM comments c JOIN users u ON u.id = c.user_id
            WHERE c.media_id = %s ORDER BY c.created_at""",
         (media_id,),
@@ -26,6 +26,7 @@ async def list_comments(media_id: str):
             "user_id": c["user_id"],
             "user_name": c["user_name"],
             "user_display_name": c["user_display_name"],
+            "user_avatar_url": c.get("user_avatar_url"),
             "text": c["text"],
             "created_at": c["created_at"].isoformat() if c["created_at"] else None,
         })
@@ -49,6 +50,7 @@ async def add_comment(
     result = dict(row)
     result["user_name"] = user["name"]
     result["user_display_name"] = user["display_name"]
+    result["user_avatar_url"] = user.get("avatar_url")
     return result
 
 

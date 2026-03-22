@@ -188,7 +188,7 @@ async def get_media(
 
     likes_data = query("SELECT l.*, u.display_name FROM likes l JOIN users u ON u.id = l.user_id WHERE l.media_id = %s", (media_id,))
     comments_data = query(
-        """SELECT c.*, u.name as user_name, u.display_name as user_display_name
+        """SELECT c.*, u.name as user_name, u.display_name as user_display_name, u.avatar_url as user_avatar_url
            FROM comments c JOIN users u ON u.id = c.user_id
            WHERE c.media_id = %s ORDER BY c.created_at""",
         (media_id,),
@@ -210,6 +210,7 @@ async def get_media(
             "user_id": c["user_id"],
             "user_name": c["user_name"],
             "user_display_name": c["user_display_name"],
+            "user_avatar_url": c.get("user_avatar_url"),
             "text": c["text"],
             "created_at": c["created_at"].isoformat() if c["created_at"] else None,
         })
