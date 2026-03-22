@@ -34,3 +34,24 @@ async def notify_new_upload(uploader_id: int, file_type: str, thumbnail_url: str
             await bot.send_message(tg_id, text)
         except Exception:
             pass
+
+
+async def notify_new_user(new_user: dict):
+    if not new_user:
+        return
+
+    all_users = query("SELECT * FROM users WHERE telegram_id IS NOT NULL")
+    name = new_user["display_name"]
+    text = f"🎉 {name} присоединился(ась) к архіву компромата!"
+
+    bot = get_bot()
+    for user in all_users:
+        if user["id"] == new_user["id"]:
+            continue
+        tg_id = user.get("telegram_id")
+        if not tg_id:
+            continue
+        try:
+            await bot.send_message(tg_id, text)
+        except Exception:
+            pass

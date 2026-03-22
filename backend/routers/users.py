@@ -2,6 +2,7 @@ from fastapi import APIRouter, Header, HTTPException, UploadFile, File
 from pydantic import BaseModel
 from backend.services.database import query, query_one, execute
 from backend.services.storage import save_file
+from backend.services.notifications import notify_new_user
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -33,7 +34,9 @@ async def link_telegram(
         "UPDATE users SET telegram_id = %s WHERE id = %s",
         (x_telegram_user_id, user_id),
     )
-    return query_one("SELECT * FROM users WHERE id = %s", (user_id,))
+    linked_user = query_one("SELECT * FROM users WHERE id = %s", (user_id,))
+    await notify_new_user(linked_user)
+    return linked_user
 
 
 @router.get("/me")

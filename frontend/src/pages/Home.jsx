@@ -12,7 +12,7 @@ export default function Home() {
     <div className="pb-16">
       <div className="p-4">
         <h1 className="text-xl font-bold mb-4" style={{ color: 'var(--tg-theme-text-color)' }}>
-          Наша Галерея
+          Архів компромата
         </h1>
 
         {/* User tiles */}

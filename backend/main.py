@@ -24,7 +24,7 @@ async def cmd_start(message: types.Message):
         )]
     ])
     await message.answer(
-        "Привет! 👋\n\nЭто общий фотоархив для нашей компании.\n"
+        "Привет! 👋\n\nАрхів компромата 🤫\n"
         "Нажми кнопку ниже, чтобы открыть галерею:",
         reply_markup=kb,
     )
