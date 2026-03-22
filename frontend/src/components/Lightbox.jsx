@@ -3,8 +3,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query'
 import { useToggleLike } from '../hooks/useLikes'
 import { useDeleteMedia, useMediaDetail } from '../hooks/useMedia'
 import { useCurrentUser } from '../hooks/useUser'
-import { setUserAvatar } from '../api'
+import { uploadUserAvatar } from '../api'
 import CommentSection from './CommentSection'
+import CropModal from './CropModal'
 
 export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
   const { data: media, isLoading } = useMediaDetail(mediaId)
@@ -13,14 +14,16 @@ export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
   const deleteMutation = useDeleteMedia()
   const [touchStart, setTouchStart] = useState(null)
   const [showAvatarPicker, setShowAvatarPicker] = useState(false)
+  const [cropForUser, setCropForUser] = useState(null)
   const [avatarSet, setAvatarSet] = useState(null)
   const videoRef = useRef(null)
   const queryClient = useQueryClient()
 
   const avatarMutation = useMutation({
-    mutationFn: ({ userId, mediaId }) => setUserAvatar(userId, mediaId),
+    mutationFn: ({ userId, blob }) => uploadUserAvatar(userId, blob),
     onSuccess: (_, { userName }) => {
       setAvatarSet(userName)
+      setCropForUser(null)
       setShowAvatarPicker(false)
       queryClient.invalidateQueries({ queryKey: ['users'] })
       setTimeout(() => setAvatarSet(null), 2000)
@@ -90,11 +93,34 @@ export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
     })
   }
 
+  const handlePickUser = (user) => {
+    setCropForUser(user)
+  }
+
+  const handleCropConfirm = (blob) => {
+    if (!cropForUser) return
+    avatarMutation.mutate({
+      userId: cropForUser.id,
+      blob,
+      userName: cropForUser.display_name,
+    })
+  }
+
   const isOwner = currentUser && currentUser.id === media.uploader_id
 
   return (
     <div className="fixed inset-0 z-50 flex flex-col overflow-y-auto"
       style={{ backgroundColor: 'var(--tg-theme-bg-color)' }}>
+
+      {/* Crop modal */}
+      {cropForUser && (
+        <CropModal
+          imageSrc={media.file_url}
+          onConfirm={handleCropConfirm}
+          onCancel={() => setCropForUser(null)}
+        />
+      )}
+
       {/* Header */}
       <div className="flex items-center justify-between p-3 flex-shrink-0">
         <button onClick={onClose} className="text-sm font-medium"
@@ -201,11 +227,7 @@ export default function Lightbox({ mediaId, items, onClose, onNavigate }) {
                 {media.tagged_users.map((u) => (
                   <button
                     key={u.id}
-                    onClick={() => avatarMutation.mutate({
-                      userId: u.id,
-                      mediaId: media.id,
-                      userName: u.display_name,
-                    })}
+                    onClick={() => handlePickUser(u)}
                     disabled={avatarMutation.isPending}
                     className="text-xs px-3 py-1.5 rounded-lg disabled:opacity-50"
                     style={{

@@ -103,6 +103,15 @@ export async function setUserAvatar(userId, mediaId) {
   return data
 }
 
+export async function uploadUserAvatar(userId, blob) {
+  const formData = new FormData()
+  formData.append('file', blob, 'avatar.jpg')
+  const { data } = await api.post(`/users/${userId}/avatar/upload`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  })
+  return data
+}
+
 export async function fetchMe() {
   const { data } = await api.get('/users/me')
   return data
